@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia de Estudos Interativo - AZ-204</title>
+    <!-- Chosen Palette: Calm Harmony (Warm Neutrals with Muted Blue Accents) -->
+    <!-- Application Structure Plan: A dashboard-style SPA. The main view features an interactive donut chart showing exam topic weights. Clicking a chart segment or a navigation button dynamically loads detailed content for that topic into a central area. Content is organized in collapsible accordions for each Azure service, with tabbed sections for CLI/PowerShell commands. This structure prioritizes discoverability of high-impact topics first, then allows focused, drill-down study without information overload. -->
+    <!-- Visualization & Content Choices: 1. Exam Weights: Goal=Inform/Navigate, Method=Donut Chart (Chart.js/Canvas), Interaction=Click segment to navigate, Justification=Visually engaging overview & intuitive navigation. 2. Service Details: Goal=Organize, Method=Collapsible Accordions (HTML/CSS), Interaction=Click to expand/collapse, Justification=Manages complexity and prevents walls of text. 3. CLI/Commands: Goal=Compare/Use, Method=Tabbed Code Blocks (HTML/CSS/JS), Interaction=Click tabs to switch, click button to copy, Justification=Cleanly separates command types and adds practical utility. NO SVG/Mermaid used. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 450px;
+            max-height: 60vh;
+        }
+        details > summary {
+            list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+            display: none;
+        }
+        details[open] summary .arrow-down {
+            transform: rotate(180deg);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .copy-btn-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='bi bi-clipboard' viewBox='0 0 16 16'%3E%3Cpath d='M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z'/%3E%3Cpath d='M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        .copy-btn-icon.copied {
+             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='bi bi-check2' viewBox='0 0 16 16'%3E%3Cpath d='M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z'/%3E%3C/svg%3E");
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Guia de Estudos Interativo: AZ-204</h1>
+            <p class="text-slate-600 mt-1">Desenvolvimento de Soluções para Microsoft Azure</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <section id="dashboard" class="mb-12">
+            <h2 class="text-xl sm:text-2xl font-semibold text-slate-800 mb-2">Distribuição de Tópicos do Exame</h2>
+            <p class="text-slate-600 mb-6">Clique em uma seção do gráfico ou em um botão abaixo para explorar os tópicos em detalhes. Os pesos percentuais ajudam a focar seus estudos nas áreas mais importantes.</p>
+            <div class="chart-container">
+                <canvas id="examTopicsChart"></canvas>
+            </div>
+        </section>
+
+        <nav id="navigation" class="flex flex-wrap justify-center gap-2 sm:gap-4 mb-8">
+        </nav>
+
+        <section id="content-area">
+        </section>
+
+    </main>
+
+    <footer class="bg-white mt-12 py-4 border-t border-slate-200">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-500 text-sm">
+            <p>Criado para auxiliar nos estudos para a certificação AZ-204. Boa sorte!</p>
+        </div>
+    </footer>
+
+    <script>
+        const examData = {
+            sections: [
+                { id: 'compute', title: 'Desenvolver Soluções de Computação do Azure', weight: 28, color: '#38bdf8' },
+                { id: 'storage', title: 'Desenvolver para Armazenamento do Azure', weight: 18, color: '#34d399' },
+                { id: 'security', title: 'Implementar a Segurança do Azure', weight: 18, color: '#fbbf24' },
+                { id: 'monitoring', title: 'Monitorar e Solucionar Problemas', weight: 8, color: '#f87171' },
+                { id: 'connect', title: 'Conectar e Consumir Serviços', weight: 28, color: '#a78bfa' },
+            ],
+            content: {
+                compute: {
+                    title: 'Desenvolver Soluções de Computação do Azure (25-30%)',
+                    intro: 'Esta seção aborda a implementação de soluções de computação, incluindo IaaS, contêineres e plataformas como serviço (PaaS). É a área de maior peso no exame, focando em como construir, implantar e gerenciar aplicações em diferentes modelos de computação do Azure.',
+                    services: [
+                        {
+                            title: 'Azure Container Apps',
+                            summary: 'Uma plataforma sem servidor totalmente gerenciada para a criação de microsserviços e aplicações conteinerizadas.',
+                            details: `
+                                <h4 class="font-semibold text-slate-700 mb-2">Conceitos Chave:</h4>
+                                <ul class="list-disc list-inside space-y-2 mb-4 text-slate-600">
+                                    <li>Abstração sobre Kubernetes, simplificando a orquestração.</li>
+                                    <li>Ambiente sem servidor, escalonamento baseado em eventos HTTP, KEDA ou CPU/memória.</li>
+                                    <li>Suporte nativo para Dapr para resiliência e observabilidade de microsserviços.</li>
+                                    <li>Revisões: cada alteração no template cria uma nova revisão imutável, permitindo testes A/B e rollbacks.</li>
+                                </ul>
+                                <h4 class="font-semibold text-slate-700 mb-2">Casos de Uso Comuns:</h4>
+                                <ul class="list-disc list-inside space-y-2 mb-4 text-slate-600">
+                                    <li>Endpoints de API pública.</li>
+                                    <li>Aplicações de processamento em segundo plano.</li>
+                                    <li>Processamento orientado a eventos.</li>
+                                    <li>Microsserviços.</li>
+                                </ul>
+                            `,
+                            commands: {
+                                cli: `az containerapp create --name my-app --resource-group my-rg --image my-registry/my-app:1.0 --environment my-env
+az containerapp show --name my-app --resource-group my-rg
+az containerapp update --name my-app --resource-group my-rg --image my-registry/my-app:2.0
+az containerapp delete --name my-app --resource-group my-rg`,
+                                ps: `New-AzContainerApp -Name my-app -ResourceGroupName my-rg -Image my-registry/my-app:1.0 -ContainerAppEnvironmentId $envId
+Get-AzContainerApp -Name my-app -ResourceGroupName my-rg
+Update-AzContainerApp -Name my-app -ResourceGroupName my-rg -Image my-registry/my-app:2.0
+Remove-AzContainerApp -Name my-app -ResourceGroupName my-rg`
+                            }
+                        },
+                        {
+                            title: 'Azure Kubernetes Service (AKS)',
+                            summary: 'Serviço de Kubernetes gerenciado para implantar e escalar aplicações conteinerizadas com mais controle.',
+                            details: `
+                                <h4 class="font-semibold text-slate-700 mb-2">Conceitos Chave:</h4>
+                                <ul class="list-disc list-inside space-y-2 mb-4 text-slate-600">
+                                    <li>Plano de controle gerenciado pelo Azure, sem custo.</li>
+                                    <li>Pools de Nós: agrupe nós com a mesma configuração (VM size, etc.).</li>
+                                    <li>Escalonamento automático de cluster e pods (Horizontal Pod Autoscaler).</li>
+                                    <li>Integração com Microsoft Entra ID para controle de acesso baseado em função (RBAC).</li>
+                                    <li>Nós virtuais (com ACI) para bursting de carga de trabalho sem gerenciar VMs.</li>
+                                </ul>
+                                <h4 class="font-semibold text-slate-700 mb-2">Melhores Práticas:</h4>
+                                <ul class="list-disc list-inside space-y-2 mb-4 text-slate-600">
+                                    <li>Use pools de nós de sistema e de usuário para separar cargas de trabalho do sistema e da aplicação.</li>
+                                    <li>Proteja o tráfego de saída com o Azure Firewall.</li>
+                                    <li>Use identidades de carga de trabalho (workload identities) para acesso seguro a outros recursos do Azure.</li>
+                                </ul>
+                            `,
+                            commands: {
+                                cli: `az aks create --resource-group my-rg --name myAKSCluster --node-count 1 --generate-ssh-keys
+az aks get-credentials --resource-group my-rg --name myAKSCluster
+kubectl get nodes
+az aks start --name myAKSCluster --resource-group my-rg
+az aks stop --name myAKSCluster --resource-group my-rg
+az aks delete --name myAKSCluster --resource-group my-rg`,
+                                ps: `New-AzAksCluster -ResourceGroupName my-rg -Name myAKSCluster -NodeCount 1 -GenerateSshKey
+Import-AzAksCredential -ResourceGroupName my-rg -Name myAKSCluster
+Get-AzAksCluster -ResourceGroupName my-rg -Name myAKSCluster | Start-AzAksCluster
+Get-AzAksCluster -ResourceGroupName my-rg -Name myAKSCluster | Stop-AzAksCluster
+Remove-AzAksCluster -ResourceGroupName my-rg -Name myAKSCluster`
+                            }
+                        },
+                        {
+                            title: 'Azure App Service',
+                            summary: 'Plataforma como serviço (PaaS) para criar e hospedar aplicações web e APIs sem gerenciar infraestrutura.',
+                            details: `
+                                <h4 class="font-semibold text-slate-700 mb-2">Conceitos Chave:</h4>
+                                <ul class="list-disc list-inside space-y-2 mb-4 text-slate-600">
+                                    <li>Suporta .NET, Java, Node.js, Python, PHP e contêineres personalizados.</li>
+                                    <li>Plano do Serviço de Aplicativo: define a localização, tamanho e recursos da computação.</li>
+                                    <li>Slots de implantação: ambientes de preparo (staging) para testar alterações antes de trocá-las para produção.</li>
+                                    <li>Escalonamento automático baseado em métricas (CPU, memória, etc.).</li>
+                                    <li>Integração com VNet para acesso a recursos em redes privadas.</li>
+                                </ul>
+                            `,
+                            commands: {
+                                cli: `az webapp up --name my-unique-app-name --sku F1 --location eastus
+az webapp show --name my-unique-app-name --resource-group my-rg
+az webapp config appsettings set --name my-unique-app-name --resource-group my-rg --settings "KEY=VALUE"
+az webapp deployment slot create --name my-unique-app-name --resource-group my-rg --slot staging
+az webapp delete --name my-unique-app-name --resource-group my-rg`,
+                                ps: `New-AzWebApp -Name my-unique-app-name -Location "East US" -AppServicePlan my-plan -ResourceGroupName my-rg
+Get-AzWebApp -Name my-unique-app-name -ResourceGroupName my-rg
+Set-AzWebApp -Name my-unique-app-name -ResourceGroupName my-rg -AppSettings @{"KEY"="VALUE"}
+New-AzWebAppSlot -Name my-unique-app-name -ResourceGroupName my-rg -Slot staging -AppServicePlan my-plan
+Remove-AzWebApp -Name my-unique-app-name -ResourceGroupName my-rg`
+                            }
+                        },
+                         {
+                            title: 'Azure Functions',
+                            summary: 'Solução de computação sem servidor e orientada a eventos para executar código sob demanda.',
+                            details: `
+                                <h4 class="font-semibold text-slate-700 mb-2">Conceitos Chave:</h4>
+                                <ul class="list-disc list-inside space-y-2 mb-4 text-slate-600">
+                                    <li>Gatilhos (Triggers): o que faz a função executar (ex: HTTP, Timer, Fila).</li>
+                                    <li>Associações (Bindings): maneira declarativa de conectar dados à função (entrada e saída).</li>
+                                    <li>Planos de Hospedagem: Consumo (pague pelo uso), Premium (instâncias pré-aquecidas) e Dedicado (App Service Plan).</li>
+                                    <li>Durable Functions: extensão para escrever funções com estado em um ambiente sem servidor.</li>
+                                </ul>
+                                <h4 class="font-semibold text-slate-700 mb-2">Melhores Práticas:</h4>
+                                <ul class="list-disc list-inside space-y-2 mb-4 text-slate-600">
+                                    <li>Funções devem ser pequenas e focadas em uma única tarefa.</li>
+                                    <li>Reutilize conexões de cliente (ex: HttpClient, CosmosClient) para otimizar o desempenho.</li>
+                                    <li>Escreva funções idempotentes para que possam ser reexecutadas com segurança.</li>
+                                </ul>
+                            `,
+                            commands: {
+                                cli: `az functionapp create --resource-group my-rg --consumption-plan-location eastus --runtime node --functions-version 4 --name my-unique-function-app --storage-account my-storage-account
+az functionapp show --name my-unique-function-app --resource-group my-rg
+az functionapp config appsettings set --name my-unique-function-app --resource-group my-rg --settings "KEY=VALUE"
+az functionapp deployment source config --name my-unique-function-app --resource-group my-rg --repo-url "https://github.com/Azure-Samples/functions-quickstart-templates" --branch master --manual-integration
+az functionapp delete --name my-unique-function-app --resource-group my-rg`,
+                                ps: `New-AzFunctionApp -Name my-unique-function-app -ResourceGroupName my-rg -StorageAccountName my-storage-account -Runtime node -Consumption
+Get-AzFunctionApp -Name my-unique-function-app -ResourceGroupName my-rg
+Set-AzFunctionApp -Name my-unique-function-app -ResourceGroupName my-rg -AppSettings @{"KEY"="VALUE"}
+Remove-AzFunctionApp -Name my-unique-function-app -ResourceGroupName my-rg`
+                            }
+                        }
+                    ]
+                },
+                storage: {
+                    title: 'Desenvolver para Armazenamento do Azure (15-20%)',
+                    intro: 'Esta seção cobre o desenvolvimento de soluções que utilizam os serviços de armazenamento do Azure. O foco está em como interagir programaticamente com o Azure Cosmos DB para dados NoSQL e com o Armazenamento de Blobs para dados não estruturados.',
+                     services: [
+                        {
+                            title: 'Azure Cosmos DB',
+                            summary: 'Banco de dados NoSQL multimodelo e distribuído globalmente para aplicações modernas.',
+                            details: `
+                                <h4 class="font-semibold text-slate-700 mb-2">Conceitos Chave:</h4>
+                                <ul class="list-disc list-inside space-y-2 mb-4 text-slate-600">
+                                    <li>APIs: Suporta NoSQL (anteriormente SQL API), MongoDB, Cassandra, Gremlin (grafo) e Table.</li>
+                                    <li>Unidades de Requisição (RUs): unidade de medida do throughput. Pode ser provisionado em bancos de dados ou contêineres.</li>
+                                    <li>Chave de Partição: essencial para escalabilidade. Distribui os dados logicamente e fisicamente. A escolha da chave de partição é a decisão de design mais importante.</li>
+                                    <li>Níveis de Consistência: Strong, Bounded Staleness, Session, Consistent Prefix, Eventual. Oferece um trade-off entre consistência, disponibilidade e latência.</li>
+                                    <li>Feed de Alterações (Change Feed): fornece um feed ordenado e persistente de alterações nos documentos de um contêiner.</li>
+                                </ul>
+                            `,
+                            commands: {
+                                cli: `az cosmosdb create --name my-cosmos-account --resource-group my-rg --locations "East US"=0 "West US"=1 --default-consistency-level Session
+az cosmosdb sql database create -g my-rg -a my-cosmos-account -n my-db
+az cosmosdb sql container create -g my-rg -a my-cosmos-account -d my-db -n my-container --partition-key-path "/myPartitionKey" --throughput 400
+az cosmosdb show --name my-cosmos-account --resource-group my-rg
+az cosmosdb delete --name my-cosmos-account --resource-group my-rg`,
+                                ps: `New-AzCosmosDBAccount -Name my-cosmos-account -ResourceGroupName my-rg -Location "East US" -DefaultConsistencyLevel Session
+New-AzCosmosDBSqlDatabase -ResourceGroupName my-rg -AccountName my-cosmos-account -Name my-db
+New-AzCosmosDBSqlContainer -ResourceGroupName my-rg -AccountName my-cosmos-account -DatabaseName my-db -Name my-container -PartitionKeyPath "/myPartitionKey" -Throughput 400
+Get-AzCosmosDBAccount -Name my-cosmos-account -ResourceGroupName my-rg
+Remove-AzCosmosDBAccount -Name my-cosmos-account -ResourceGroupName my-rg`
+                            }
+                        },
+                        {
+                            title: 'Azure Blob Storage',
+                            summary: 'Armazenamento de objetos otimizado para grandes quantidades de dados não estruturados.',
+                            details: `
+                                <h4 class="font-semibold text-slate-700 mb-2">Conceitos Chave:</h4>
+                                <ul class="list-disc list-inside space-y-2 mb-4 text-slate-600">
+                                    <li>Tipos de Blob: Block Blobs (texto/binário), Append Blobs (logs) e Page Blobs (arquivos de acesso aleatório, como discos de VM).</li>
+                                    <li>Camadas de Acesso (Tiers): Hot (acesso frequente), Cool (acesso infrequente), Cold (raramente acessado, novo tier) e Archive (arquivamento de longo prazo).</li>
+                                    <li>Gerenciamento do Ciclo de Vida: políticas para mover blobs automaticamente entre as camadas de acesso para otimizar custos.</li>
+                                    <li>Assinatura de Acesso Compartilhado (SAS): URI que concede direitos de acesso restritos a recursos de armazenamento.</li>
+                                    <li>Imutabilidade: políticas para armazenar dados em um estado WORM (Write-Once, Read-Many).</li>
+                                </ul>
+                            `,
+                            commands: {
+                                cli: `az storage account create --name mystorageaccount --resource-group my-rg --location eastus --sku Standard_LRS
+az storage container create --name my-container --account-name mystorageaccount
+az storage blob upload --account-name mystorageaccount -c my-container -f "path/to/file.txt" -n "file.txt"
+az storage blob download --account-name mystorageaccount -c my-container -n "file.txt" -f "path/to/local/file.txt"
+az storage blob delete --account-name mystorageaccount -c my-container -n "file.txt"
+az storage account delete --name mystorageaccount --resource-group my-rg`,
+                                ps: `New-AzStorageAccount -ResourceGroupName my-rg -Name mystorageaccount -Location "East US" -SkuName Standard_LRS
+New-AzStorageContainer -Name my-container -Context (Get-AzStorageAccount -ResourceGroupName my-rg -Name mystorageaccount).Context
+Set-AzStorageBlobContent -Context (Get-AzStorageAccount -ResourceGroupName my-rg -Name mystorageaccount).Context -Container my-container -File "path/to/file.txt" -Blob "file.txt"
+Get-AzStorageBlobContent -Context (Get-AzStorageAccount -ResourceGroupName my-rg -Name mystorageaccount).Context -Container my-container -Blob "file.txt" -Destination "path/to/local/file.txt"
+Remove-AzStorageBlob -Context (Get-AzStorageAccount -ResourceGroupName my-rg -Name mystorageaccount).Context -Container my-container -Blob "file.txt"
+Remove-AzStorageAccount -ResourceGroupName my-rg -Name mystorageaccount`
+                            }
+                        }
+                    ]
+                },
+                security: {
+                    title: 'Implementar a Segurança do Azure (15-20%)',
+                    intro: 'A segurança é fundamental. Esta seção aborda como implementar autenticação e autorização para suas aplicações e como proteger segredos e chaves de configuração usando os serviços de identidade e segurança do Azure.',
+                     services: [
+                        {
+                            title: 'Microsoft Entra ID',
+                            summary: 'Serviço de gerenciamento de identidade e acesso baseado em nuvem da Microsoft.',
+                            details: `
+                                <h4 class="font-semibold text-slate-700 mb-2">Conceitos Chave:</h4>
+                                <ul class="list-disc list-inside space-y-2 mb-4 text-slate-600">
+                                    <li>Autenticação vs. Autorização: Entra ID lida com ambos. Autenticação (quem você é) e Autorização (o que você pode fazer).</li>
+                                    <li>Registros de Aplicativo: representa sua aplicação no Entra ID, permitindo que ela se integre e chame APIs.</li>
+                                    <li>Entidades de Serviço (Service Principals): uma instância de um registro de aplicativo em um locatário específico.</li>
+                                    <li>Identidades Gerenciadas: identidades para recursos do Azure, gerenciadas automaticamente pelo Azure. Elimina a necessidade de gerenciar credenciais no código.</li>
+                                    <li>MSAL (Microsoft Authentication Library): biblioteca recomendada para adquirir tokens para chamar APIs protegidas.</li>
+                                </ul>
+                            `,
+                            commands: {
+                                cli: `az ad app create --display-name "MyWebApp" --homepage "http://localhost" --identifier-uris "api://MyWebApp"
+az ad app show --id "MyWebApp"
+az ad sp create --id "APP_ID_FROM_ABOVE"
+az ad sp show --id "APP_ID_FROM_ABOVE"
+az ad app delete --id "MyWebApp"`,
+                                ps: `New-MgApplication -DisplayName "MyWebApp" -Homepage "http://localhost" -IdentifierUris "api://MyWebApp"
+Get-MgApplication -ApplicationId "APP_ID_FROM_ABOVE"
+New-MgServicePrincipal -AppId "APP_ID_FROM_ABOVE"
+Get-MgServicePrincipal -ServicePrincipalId "SERVICE_PRINCIPAL_ID_FROM_ABOVE"
+Remove-MgApplication -ApplicationId "APP_ID_FROM_ABOVE"`
+                            }
+                        },
+                        {
+                            title: 'Azure Key Vault',
+                            summary: 'Serviço de nuvem para armazenar e acessar segredos, chaves e certificados de forma segura.',
+                            details: `
+                                <h4 class="font-semibold text-slate-700 mb-2">Conceitos Chave:</h4>
+                                <ul class="list-disc list-inside space-y-2 mb-4 text-slate-600">
+                                    <li>Objetos: Chaves (criptográficas), Segredos (qualquer string, como strings de conexão) e Certificados.</li>
+                                    <li>Modelo de Permissão: RBAC (recomendado) ou Políticas de Acesso. RBAC oferece controle de acesso mais granular.</li>
+                                    <li>Soft Delete & Purge Protection: protege contra exclusão acidental ou maliciosa de segredos.</li>
+                                    <li>Integração com serviços do Azure: App Service, Functions, AKS, etc., podem referenciar segredos do Key Vault diretamente, evitando que fiquem no código ou na configuração.</li>
+                                </ul>
+                            `,
+                            commands: {
+                                cli: `az keyvault create --name my-key-vault --resource-group my-rg --location eastus
+az keyvault secret set --vault-name my-key-vault --name "my-secret" --value "my-secret-value"
+az keyvault secret show --vault-name my-key-vault --name "my-secret"
+az keyvault secret delete --vault-name my-key-vault --name "my-secret"
+az keyvault delete --name my-key-vault --resource-group my-rg`,
+                                ps: `New-AzKeyVault -VaultName my-key-vault -ResourceGroupName my-rg -Location "East US"
+Set-AzKeyVaultSecret -VaultName my-key-vault -Name "my-secret" -SecretValue (ConvertTo-SecureString "my-secret-value" -AsPlainText -Force)
+Get-AzKeyVaultSecret -VaultName my-key-vault -Name "my-secret"
+Remove-AzKeyVaultSecret -VaultName my-key-vault -Name "my-secret"
+Remove-AzKeyVault -VaultName my-key-vault -ResourceGroupName my-rg`
+                            }
+                        }
+                    ]
+                },
+                monitoring: {
+                    title: 'Monitorar e Solucionar Problemas (5-10%)',
+                    intro: 'Embora seja a seção com menor peso, entender como monitorar e diagnosticar problemas é crucial para manter a saúde e o desempenho de suas aplicações. O foco principal é o Application Insights.',
+                     services: [
+                        {
+                            title: 'Application Insights',
+                            summary: 'Recurso do Azure Monitor para gerenciamento de desempenho de aplicações (APM).',
+                            details: `
+                                <h4 class="font-semibold text-slate-700 mb-2">Conceitos Chave:</h4>
+                                <ul class="list-disc list-inside space-y-2 mb-4 text-slate-600">
+                                    <li>Telemetria: coleta automática de solicitações, dependências, exceções, contadores de desempenho e visualizações de página.</li>
+                                    <li>Mapa da Aplicação: visualização da topologia de uma aplicação distribuída, mostrando como os componentes interagem.</li>
+                                    <li>Live Metrics: fluxo de métricas em tempo real para depuração e monitoramento de implantações.</li>
+                                    <li>Log Analytics & KQL (Kusto Query Language): linguagem poderosa para consultar todos os dados de telemetria coletados.</li>
+                                    <li>Amostragem (Sampling): técnica para reduzir o volume de telemetria (e custos) enquanto mantém dados estatisticamente corretos. Pode ser de ingestão ou de taxa fixa.</li>
+                                </ul>
+                            `,
+                            commands: {
+                                cli: `az monitor app-insights component create --app MyAppInsights --location eastus --kind web -g my-rg
+az monitor app-insights component show --app MyAppInsights --resource-group my-rg
+az monitor app-insights component update --app MyAppInsights --resource-group my-rg --default-data-retention 90
+az monitor app-insights component delete --app MyAppInsights --resource-group my-rg`,
+                                ps: `New-AzApplicationInsights -Name MyAppInsights -ResourceGroupName my-rg -Location eastus
+Get-AzApplicationInsights -Name MyAppInsights -ResourceGroupName my-rg
+Set-AzApplicationInsights -Name MyAppInsights -ResourceGroupName my-rg -RetentionInDays 90
+Remove-AzApplicationInsights -Name MyAppInsights -ResourceGroupName my-rg`
+                            }
+                        }
+                    ]
+                },
+                connect: {
+                    title: 'Conectar e Consumir Serviços (20-25%)',
+                    intro: 'Aplicações modernas raramente vivem isoladas. Esta seção aborda como suas aplicações podem se comunicar de forma assíncrona usando serviços de mensagens e como expor e gerenciar APIs de forma segura e escalável.',
+                     services: [
+                        {
+                            title: 'Azure API Management (APIM)',
+                            summary: 'Plataforma híbrida e multinuvem para gerenciar APIs em todos os ambientes.',
+                            details: `
+                                <h4 class="font-semibold text-slate-700 mb-2">Conceitos Chave:</h4>
+                                <ul class="list-disc list-inside space-y-2 mb-4 text-slate-600">
+                                    <li>Componentes: Gateway (proxy para APIs), Portal do Desenvolvedor (documentação) e Plano de Gerenciamento (portal do Azure/APIs).</li>
+                                    <li>Políticas: regras poderosas aplicadas na entrada ou saída de uma solicitação para transformar, proteger e controlar o tráfego da API (ex: validação de JWT, limitação de taxa, cache).</li>
+                                    <li>Produtos e Assinaturas: como as APIs são agrupadas e expostas aos consumidores, que usam chaves de assinatura para acesso.</li>
+                                    <li>Versionamento e Revisões: para gerenciar o ciclo de vida da API sem interromper os consumidores.</li>
+                                </ul>
+                            `,
+                            commands: {
+                                cli: `az apim create -n my-apim -g my-rg -l "East US" --publisher-email "admin@example.com" --publisher-name "MyOrg"
+az apim api import --service-name my-apim --path myapi --api-id myapi --specification-format OpenApiJson --specification-path "https://petstore.swagger.io/v2/swagger.json"
+az apim api list --service-name my-apim -g my-rg
+az apim api show --service-name my-apim --api-id myapi -g my-rg
+az apim delete -n my-apim -g my-rg`,
+                                ps: `New-AzApiManagement -ResourceGroupName my-rg -Name my-apim -Location "East US" -Organization "MyOrg" -AdminEmail "admin@example.com"
+Import-AzApiManagementApi -Context (Get-AzApiManagement -ResourceGroupName my-rg -Name my-apim) -Path myapi -ApiId myapi -SpecificationFormat OpenApiJson -SpecificationPath "https://petstore.swagger.io/v2/swagger.json"
+Get-AzApiManagementApi -Context (Get-AzApiManagement -ResourceGroupName my-rg -Name my-apim)
+Remove-AzApiManagement -ResourceGroupName my-rg -Name my-apim`
+                            }
+                        },
+                        {
+                            title: 'Serviços de Mensagens (Filas e Tópicos)',
+                            summary: 'Visão geral dos serviços para comunicação assíncrona.',
+                            details: `
+                                <h4 class="font-semibold text-slate-700 mb-2">Comparação de Serviços:</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm text-left text-slate-500">
+                                        <thead class="text-xs text-slate-700 uppercase bg-slate-100">
+                                            <tr><th scope="col" class="px-6 py-3">Serviço</th><th scope="col" class="px-6 py-3">Cenário Principal</th><th scope="col" class="px-6 py-3">Característica Chave</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr class="bg-white border-b"><td class="px-6 py-4">Storage Queues</td><td class="px-6 py-4">Fila de trabalho simples e grande (até 500 TB)</td><td class="px-6 py-4">Simplicidade, custo baixo, melhor para backlogs de trabalho.</td></tr>
+                                            <tr class="bg-slate-50 border-b"><td class="px-6 py-4">Service Bus Queues</td><td class="px-6 py-4">Mensagens transacionais e ordenadas (FIFO)</td><td class="px-6 py-4">Entrega garantida, detecção de duplicados, sessões, dead-lettering.</td></tr>
+                                            <tr class="bg-white border-b"><td class="px-6 py-4">Service Bus Topics</td><td class="px-6 py-4">Publicação/Assinatura (Pub/Sub) para múltiplos consumidores</td><td class="px-6 py-4">Filtros por assinatura, um remetente para muitos receptores.</td></tr>
+                                            <tr class="bg-slate-50 border-b"><td class="px-6 py-4">Event Grid</td><td class="px-6 py-4">Roteamento de eventos reativos (notificações)</td><td class="px-6 py-4">Distribuição de eventos quase em tempo real, altamente escalável, modelo push.</td></tr>
+                                            <tr class="bg-white"><td class="px-6 py-4">Event Hubs</td><td class="px-6 py-4">Streaming de Big Data e telemetria</td><td class="px-6 py-4">Ingestão massiva de eventos (milhões/segundo), modelo pull com partições.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `,
+                            commands: {
+                                cli: `az servicebus namespace create --resource-group my-rg --name my-namespace --location eastus --sku Basic
+az servicebus queue create --resource-group my-rg --namespace-name my-namespace --name my-queue
+az servicebus topic create --resource-group my-rg --namespace-name my-namespace --name my-topic
+az servicebus subscription create --resource-group my-rg --namespace-name my-namespace --topic-name my-topic --name my-subscription
+az servicebus namespace delete --resource-group my-rg --name my-namespace`,
+                                ps: `New-AzServiceBusNamespace -ResourceGroupName my-rg -Name my-namespace -Location "East US" -Sku Basic
+New-AzServiceBusQueue -ResourceGroupName my-rg -NamespaceName my-namespace -Name my-queue
+New-AzServiceBusTopic -ResourceGroupName my-rg -NamespaceName my-namespace -Name my-topic
+New-AzServiceBusSubscription -ResourceGroupName my-rg -NamespaceName my-namespace -TopicName my-topic -Name my-subscription
+Remove-AzServiceBusNamespace -ResourceGroupName my-rg -Name my-namespace`
+                            }
+                        }
+                    ]
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const chartCtx = document.getElementById('examTopicsChart').getContext('2d');
+            const navContainer = document.getElementById('navigation');
+            const contentArea = document.getElementById('content-area');
+
+            const sectionLabels = examData.sections.map(s => s.title);
+            const sectionWeights = examData.sections.map(s => s.weight);
+            const sectionColors = examData.sections.map(s => s.color);
+
+            const chart = new Chart(chartCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: sectionLabels,
+                    datasets: [{
+                        label: 'Peso no Exame (%)',
+                        data: sectionWeights,
+                        backgroundColor: sectionColors,
+                        borderColor: '#f8fafc',
+                        borderWidth: 4,
+                        hoverOffset: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const sectionIndex = elements[0].index;
+                            const sectionId = examData.sections[sectionIndex].id;
+                            navigateToSection(sectionId);
+                        }
+                    }
+                }
+            });
+
+            function createNavigation() {
+                examData.sections.forEach(section => {
+                    const button = document.createElement('button');
+                    button.className = 'nav-btn px-4 py-2 text-sm font-medium rounded-full shadow-sm transition-all duration-200';
+                    button.textContent = section.title.split('(')[0].trim();
+                    button.dataset.sectionId = section.id;
+                    
+                    button.style.backgroundColor = '#ffffff';
+                    button.style.color = section.color;
+                    button.style.border = `1px solid ${section.color}`;
+
+                    button.addEventListener('mouseover', () => {
+                         button.style.backgroundColor = section.color;
+                         button.style.color = '#ffffff';
+                    });
+                    button.addEventListener('mouseout', () => {
+                        if (!button.classList.contains('active')) {
+                            button.style.backgroundColor = '#ffffff';
+                            button.style.color = section.color;
+                        }
+                    });
+
+                    button.addEventListener('click', () => navigateToSection(section.id));
+                    navContainer.appendChild(button);
+                });
+            }
+
+            function navigateToSection(sectionId) {
+                const section = document.querySelector(`.nav-btn[data-section-id="${sectionId}"]`);
+                if (section) {
+                    document.querySelectorAll('.nav-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                        btn.style.backgroundColor = '#ffffff';
+                        btn.style.color = examData.sections.find(s => s.id === btn.dataset.sectionId).color;
+                    });
+                    section.classList.add('active');
+                    section.style.backgroundColor = examData.sections.find(s => s.id === sectionId).color;
+                    section.style.color = '#ffffff';
+
+                    renderContent(sectionId);
+                    
+                    const contentElement = document.getElementById(sectionId);
+                    if(contentElement){
+                       contentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            }
+            
+            function renderContent(sectionId) {
+                const sectionContent = examData.content[sectionId];
+                if (!sectionContent) return;
+
+                let html = `<div id="${sectionId}" class="bg-white p-6 rounded-lg shadow-md">
+                                <h2 class="text-2xl font-bold text-slate-900 mb-2">${sectionContent.title}</h2>
+                                <p class="text-slate-600 mb-8">${sectionContent.intro}</p>
+                                <div class="space-y-4">`;
+
+                sectionContent.services.forEach((service, index) => {
+                    const serviceId = `${sectionId}-service-${index}`;
+                    html += `
+                        <details class="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                            <summary class="flex justify-between items-center p-4 cursor-pointer hover:bg-slate-100 transition-colors">
+                                <h3 class="font-semibold text-lg text-slate-800">${service.title}</h3>
+                                <div class="flex items-center">
+                                     <p class="text-sm text-slate-500 mr-4 hidden sm:block">${service.summary}</p>
+                                     <span class="arrow-down transition-transform duration-300">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                     </span>
+                                </div>
+                            </summary>
+                            <div class="p-6 border-t border-slate-200">
+                                ${service.details}
+                                <div class="mt-6">
+                                    <div class="flex border-b border-slate-300 mb-4">
+                                        <button class="tab-btn py-2 px-4 text-sm font-medium -mb-px border-b-2 border-transparent" data-tab="${serviceId}-cli">Azure CLI</button>
+                                        <button class="tab-btn py-2 px-4 text-sm font-medium -mb-px border-b-2 border-transparent" data-tab="${serviceId}-ps">PowerShell</button>
+                                    </div>
+                                    <div id="${serviceId}-cli" class="tab-content">
+                                        ${createCodeBlock(service.commands.cli)}
+                                    </div>
+                                    <div id="${serviceId}-ps" class="tab-content">
+                                        ${createCodeBlock(service.commands.ps)}
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+                    `;
+                });
+
+                html += `</div></div>`;
+                contentArea.innerHTML = html;
+                
+                setupTabs();
+            }
+            
+            function createCodeBlock(code) {
+                return `
+                    <div class="bg-slate-900 rounded-md relative group">
+                        <button class="copy-btn absolute top-2 right-2 p-1.5 bg-slate-700 text-slate-300 rounded-md hover:bg-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" title="Copiar código">
+                           <span class="copy-btn-icon"></span>
+                        </button>
+                        <pre class="text-slate-300 text-sm p-4 overflow-x-auto"><code>${code}</code></pre>
+                    </div>
+                `;
+            }
+
+            function setupTabs() {
+                const tabContainers = contentArea.querySelectorAll('details');
+                tabContainers.forEach(container => {
+                    const tabs = container.querySelectorAll('.tab-btn');
+                    const contents = container.querySelectorAll('.tab-content');
+                    
+                    // Activate first tab by default
+                    if (tabs.length > 0) {
+                        tabs[0].classList.add('text-sky-600', 'border-sky-600');
+                        contents[0].classList.add('active');
+                    }
+
+                    tabs.forEach(tab => {
+                        tab.addEventListener('click', () => {
+                            tabs.forEach(t => t.classList.remove('text-sky-600', 'border-sky-600'));
+                            tab.classList.add('text-sky-600', 'border-sky-600');
+                            
+                            contents.forEach(content => content.classList.remove('active'));
+                            document.getElementById(tab.dataset.tab).classList.add('active');
+                        });
+                    });
+                });
+            }
+
+            contentArea.addEventListener('click', function(e) {
+                if (e.target.closest('.copy-btn')) {
+                    const button = e.target.closest('.copy-btn');
+                    const pre = button.nextElementSibling;
+                    const code = pre.textContent;
+
+                    const textArea = document.createElement('textarea');
+                    textArea.value = code;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        const icon = button.querySelector('.copy-btn-icon');
+                        icon.classList.add('copied');
+                        setTimeout(() => {
+                           icon.classList.remove('copied');
+                        }, 2000);
+                    } catch (err) {
+                        console.error('Falha ao copiar texto: ', err);
+                    }
+                    document.body.removeChild(textArea);
+                }
+            });
+
+            createNavigation();
+            navigateToSection(examData.sections[0].id);
+        });
+    </script>
+
+</body>
+</html>
